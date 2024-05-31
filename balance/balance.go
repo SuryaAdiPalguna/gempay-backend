@@ -3,6 +3,7 @@ package balance
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -42,15 +43,16 @@ func Balance(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// ambil input
 		var data Account
-		if err := c.BindJSON(&data); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
-			return
-		}
+		// if err := c.BindJSON(&data); err != nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		// 	return
+		// }
+		data.Username = c.DefaultPostForm("username", "")
 
 		// ambil data
 		err := db.QueryRow("SELECT * FROM account WHERE username = ?", data.Username).Scan(&data.IdAccount, &data.Username, &data.Password, &data.Email, &data.Phone, &data.Name, &data.Gender, &data.Address, &data.Balance)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			return
 		}
 
@@ -63,15 +65,23 @@ func BalanceList(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// ambil input
 		var data Account
-		if err := c.BindJSON(&data); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		// if err := c.BindJSON(&data); err != nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		// 	return
+		// }
+		var idAccountString = c.DefaultPostForm("id_account", "")
+		IdAccount, err := strconv.Atoi(idAccountString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
+		data.IdAccount = IdAccount
 
 		// ambil data
 		rows, err := db.Query("SELECT * FROM deposite INNER JOIN payment ON deposite.id_payment = payment.id_payment WHERE transaction.id_account = ?", data.IdAccount)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			return
 		}
 		defer rows.Close()
@@ -83,7 +93,7 @@ func BalanceList(db *sql.DB) gin.HandlerFunc {
 			var tempPayment Payment
 			err = rows.Scan(&tempDeposite.IdDeposite, &tempDeposite.IdAccount, &tempDeposite.IdPayment, &tempDeposite.Date, &tempDeposite.AmountDeposite, &tempDeposite.Description, &tempDeposite.PriceUnique, &tempDeposite.PriceMutation, &tempDeposite.StatusDeposite, &tempDeposite.StatusMutation, &tempPayment.IdPayment, &tempPayment.MethodPayment, &tempPayment.PricePayment)
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+				c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			}
 
 			resultDeposite = append(resultDeposite, tempDeposite)
@@ -99,15 +109,81 @@ func TopUpBalance(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// ambil input
 		var data Deposite
-		if err := c.BindJSON(&data); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"}) // error client
+		// if err := c.BindJSON(&data); err != nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err}) // error client
+		// 	return
+		// }
+		var idAccountString = c.DefaultPostForm("id_deposite", "")
+		IdAccount, err := strconv.Atoi(idAccountString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
+		data.IdAccount = IdAccount
+
+		var idPaymentString = c.DefaultPostForm("id_payment", "")
+		IdPayment, err := strconv.Atoi(idPaymentString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
+			return
+		}
+		data.IdPayment = IdPayment
+
+		data.Date = c.DefaultPostForm("date", "")
+
+		var AmountDepositeString = c.DefaultPostForm("amount_deposite", "")
+		AmountDeposite, err := strconv.Atoi(AmountDepositeString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
+			return
+		}
+		data.AmountDeposite = AmountDeposite 
+
+		data.Description = c.DefaultPostForm("description", "")
+
+		var PriceUniqueString = c.DefaultPostForm("price_unique", "")
+		PriceUnique, err := strconv.Atoi(PriceUniqueString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
+			return
+		}
+		data.PriceUnique = PriceUnique 
+
+		var PriceMutationString = c.DefaultPostForm("price_mutation", "")
+		PriceMutation, err := strconv.Atoi(PriceMutationString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
+			return
+		}
+		data.PriceMutation = PriceMutation 
+
+		var StatusDepositeString = c.DefaultPostForm("status_deposite", "")
+		StatusDeposite, err := strconv.Atoi(StatusDepositeString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
+			return
+		}
+		data.StatusDeposite = StatusDeposite 
+
+		var StatusMutationString = c.DefaultPostForm("status_mutation", "")
+		StatusMutation, err := strconv.Atoi(StatusMutationString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
+			return
+		}
+		data.StatusMutation = StatusMutation
 
 		// insert data
-		_, err := db.Exec("INSERT INTO deposite VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", data.IdDeposite, data.IdAccount, data.IdPayment, data.Date, data.AmountDeposite, data.Description, data.PriceUnique, data.PriceMutation, data.StatusDeposite, data.StatusMutation)
+		_, err = db.Exec("INSERT INTO deposite VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", data.IdAccount, data.IdPayment, data.Date, data.AmountDeposite, data.Description, data.PriceUnique, data.PriceMutation, data.StatusDeposite, data.StatusMutation)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"}) // error server
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err}) // error server
 			return
 		}
 
@@ -120,17 +196,25 @@ func CheckTopUpBalance(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// ambil input
 		var data Deposite
-		if err := c.BindJSON(&data); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		// if err := c.BindJSON(&data); err != nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		// 	return
+		// }
+		var idDepositeString = c.DefaultPostForm("id_deposite", "")
+		IdDeposite, err := strconv.Atoi(idDepositeString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
+		data.IdDeposite = IdDeposite
 
 		// ambil data
 		var deposite Deposite
 		var payment Payment
-		err := db.QueryRow("SELECT * FROM deposite INNER JOIN payment ON deposite.id_payment = payment.id_payment WHERE deposite.id_deposite = ?", data.IdDeposite).Scan(&deposite.IdDeposite, &deposite.IdAccount, &deposite.IdPayment, &deposite.Date, &deposite.AmountDeposite, &deposite.Description, &deposite.PriceUnique, &deposite.PriceMutation, &deposite.StatusDeposite, &deposite.StatusMutation, &payment.IdPayment, &payment.MethodPayment, &payment.PricePayment)
+		err = db.QueryRow("SELECT * FROM deposite INNER JOIN payment ON deposite.id_payment = payment.id_payment WHERE deposite.id_deposite = ?", data.IdDeposite).Scan(&deposite.IdDeposite, &deposite.IdAccount, &deposite.IdPayment, &deposite.Date, &deposite.AmountDeposite, &deposite.Description, &deposite.PriceUnique, &deposite.PriceMutation, &deposite.StatusDeposite, &deposite.StatusMutation, &payment.IdPayment, &payment.MethodPayment, &payment.PricePayment)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			return
 		}
 
@@ -143,17 +227,25 @@ func TopUpReceipt(db *sql.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// ambil input
 		var data Deposite
-		if err := c.BindJSON(&data); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Bad Request"})
+		// if err := c.BindJSON(&data); err != nil {
+		// 	c.JSON(http.StatusBadRequest, gin.H{"error": err})
+		// 	return
+		// }
+		var idDepositeString = c.DefaultPostForm("id_deposite", "")
+		IdDeposite, err := strconv.Atoi(idDepositeString)
+		if err != nil {
+			// Handle error: invalid integer format
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
+		data.IdDeposite = IdDeposite
 
 		// ambil data
 		var deposite Deposite
 		var payment Payment
-		err := db.QueryRow("SELECT * FROM deposite INNER JOIN payment ON deposite.id_payment = payment.id_payment WHERE deposite.id_deposite = ?", data.IdDeposite).Scan(&deposite.IdDeposite, &deposite.IdAccount, &deposite.IdPayment, &deposite.Date, &deposite.AmountDeposite, &deposite.Description, &deposite.PriceUnique, &deposite.PriceMutation, &deposite.StatusDeposite, &deposite.StatusMutation, &payment.IdPayment, &payment.MethodPayment, &payment.PricePayment)
+		err = db.QueryRow("SELECT * FROM deposite INNER JOIN payment ON deposite.id_payment = payment.id_payment WHERE deposite.id_deposite = ?", data.IdDeposite).Scan(&deposite.IdDeposite, &deposite.IdAccount, &deposite.IdPayment, &deposite.Date, &deposite.AmountDeposite, &deposite.Description, &deposite.PriceUnique, &deposite.PriceMutation, &deposite.StatusDeposite, &deposite.StatusMutation, &payment.IdPayment, &payment.MethodPayment, &payment.PricePayment)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			return
 		}
 
