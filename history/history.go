@@ -56,16 +56,15 @@ func History(db *sql.DB) gin.HandlerFunc {
 		idAccount, err := strconv.Atoi(idAccountString)
 		if err != nil {
 			// Handle error: invalid integer format
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid gender format"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
-
 		data.IdAccount = idAccount
 
 		// ambil data
 		rows, err := db.Query("SELECT * FROM transaction INNER JOIN service ON transaction.id_service = service.id_service WHERE transaction.id_account = ?", data.IdAccount)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			return
 		}
 		defer rows.Close()
@@ -77,7 +76,7 @@ func History(db *sql.DB) gin.HandlerFunc {
 			var tempService Service
 			err = rows.Scan(&tempTransaction.IdTransaction, &tempTransaction.IdAccount, &tempTransaction.IdService, &tempTransaction.Date, &tempTransaction.NumberCostumer, &tempTransaction.Reference, &tempTransaction.Description, &tempTransaction.PriceSystem, &tempTransaction.PriceMutation, &tempTransaction.StatusDeposite, &tempTransaction.StatusMutation, &tempService.IdService, &tempService.NameService, &tempService.SubnameService, &tempService.TypeService, &tempService.SubtypeService, &tempService.Description, &tempService.PriceService)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			}
 
 			resultTransaction = append(resultTransaction, tempTransaction)
@@ -99,7 +98,7 @@ func PaymentReceipt(db *sql.DB) gin.HandlerFunc {
 		IdTransaction, err := strconv.Atoi(idTransactionString)
 		if err != nil {
 			// Handle error: invalid integer format
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid gender format"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
 		data.IdTransaction = IdTransaction
@@ -109,7 +108,7 @@ func PaymentReceipt(db *sql.DB) gin.HandlerFunc {
 		var service Service
 		err = db.QueryRow("SELECT * FROM transaction INNER JOIN service ON transaction.id_service = service.id_service WHERE transaction.id_transaction = ?", data.IdTransaction).Scan(&transaction.IdTransaction, &transaction.IdAccount, &transaction.IdService, &transaction.Date, &transaction.NumberCostumer, &transaction.Reference, &transaction.Description, &transaction.PriceSystem, &transaction.PriceMutation, &transaction.StatusDeposite, &transaction.StatusMutation, &service.IdService, &service.NameService, &service.SubnameService, &service.TypeService, &service.SubtypeService, &service.Description, &service.PriceService)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			return
 		}
 
