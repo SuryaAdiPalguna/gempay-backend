@@ -66,12 +66,18 @@ func Register(db *sql.DB) gin.HandlerFunc {
 		// }
 		data.Username = c.DefaultPostForm("username", "")
 		data.Password = c.DefaultPostForm("password", "")
+		data.Email = ""
+		data.Phone = ""
+		data.Name = ""
+		data.Gender = 0
+		data.Address = ""
+		data.Balance = 0
 
 		// cek username ada atau nggak
 		var count int
 		err := db.QueryRow("SELECT COUNT(*) FROM account WHERE username = ?", data.Username).Scan(&count)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error_1": err})
 			return
 		}
 		if count > 0 {
@@ -86,9 +92,9 @@ func Register(db *sql.DB) gin.HandlerFunc {
 		}
 
 		// tambahkan akun
-		_, err = db.Exec("INSERT INTO account(username, password) VALUES (?, ?)", data.Username, string(hashedPassword))
+		_, err = db.Exec("INSERT INTO account(username, password, email, phone, name, gender, address, balance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", data.Username, string(hashedPassword), data.Email, data.Phone, data.Name, data.Gender, data.Address, data.Balance)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error_2": err})
 			return
 		}
 
@@ -108,7 +114,7 @@ func DisplayProfile(db *sql.DB) gin.HandlerFunc {
 		// ambil data
 		err := db.QueryRow("SELECT * FROM account WHERE username = ?", data.Username).Scan(&data.IdAccount, &data.Username, &data.Password, &data.Email, &data.Phone, &data.Name, &data.Gender, &data.Address, &data.Balance)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			return
 		}
 
@@ -132,17 +138,17 @@ func EditProfile(db *sql.DB) gin.HandlerFunc {
 		gender, err := strconv.Atoi(genderString)
 		if err != nil {
 			// Handle error: invalid integer format
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid gender format"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": err})
 			return
 		}
-
 		data.Gender = gender
+
 		data.Address = c.DefaultPostForm("address", "")
 
 		// update data
-		_, err = db.Exec("UPDATE users SET email = ?, phone = ?, name = ?, gender = ?, address = ? WHERE username = ?", data.Email, data.Phone, data.Name, data.Gender, data.Address, data.Username)
+		_, err = db.Exec("UPDATE account SET email = ?, phone = ?, name = ?, gender = ?, address = ? WHERE username = ?", data.Email, data.Phone, data.Name, data.Gender, data.Address, data.Username)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal Server Error"})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
 			return
 		}
 		// stmt, err := db.Prepare("UPDATE users SET email = ?, phone = ?, name = ?, gender = ?, address = ? WHERE username = ?")
